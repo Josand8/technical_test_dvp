@@ -1,0 +1,45 @@
+# PostgreSQL Database Configuration
+# Servicio de Facturación - Comparte base de datos con el servicio de clientes
+#
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
+  username: <%= ENV.fetch("POSTGRES_USERNAME") { ENV["USER"] } %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
+
+development:
+  <<: *default
+  # Usa la misma base de datos que clients_service
+  database: clients_service_development
+
+test:
+  <<: *default
+  database: clients_service_test
+
+production:
+  primary:
+    <<: *default
+    database: clients_service_production
+    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
+    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+  cache:
+    <<: *default
+    database: clients_service_production
+    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
+    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: clients_service_production
+    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
+    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: clients_service_production
+    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
+    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+    migrations_paths: db/cable_migrate

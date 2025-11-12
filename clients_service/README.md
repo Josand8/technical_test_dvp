@@ -392,7 +392,3 @@ rails db:rollback
 # Ejecutar migración específica
 rails db:migrate:up VERSION=20251111234638
 ```
-
-## 👥 Contribución
-
-Este es un proyecto de prueba técnica. Para cualquier consulta o sugerencia, contacta al equipo de desarrollo.
