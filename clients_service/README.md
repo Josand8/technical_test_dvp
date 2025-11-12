@@ -4,13 +4,16 @@ Microservicio para la gestión de clientes desarrollado con Ruby on Rails 8.1 y 
 
 ## 📋 Tabla de Contenidos
 
-- [Requisitos](#requisitos)
-- [Configuración](#configuración)
-- [Base de Datos](#base-de-datos)
-- [Ejecución](#ejecución)
-- [API Endpoints](#api-endpoints)
-- [Testing](#testing)
-- [Modelo de Datos](#modelo-de-datos)
+- [🛠 Requisitos](#-requisitos)
+- [⚙️ Configuración](#️-configuración)
+- [🗄️ Base de Datos](#️-base-de-datos)
+- [🚀 Ejecución](#-ejecución)
+- [📡 API Endpoints](#-api-endpoints)
+- [🧪 Testing](#-testing)
+- [📊 Modelo de Datos](#-modelo-de-datos)
+- [🔧 Comandos Útiles](#-comandos-útiles)
+- [📝 Notas Adicionales](#-notas-adicionales)
+- [🐛 Solución de Problemas](#-solución-de-problemas)
 
 ## 🛠 Requisitos
 
