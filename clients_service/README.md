@@ -35,7 +35,7 @@ Crear un archivo `.env` en la raíz del proyecto:
 
 ```env
 # PostgreSQL Database Configuration
-POSTGRES_HOST=127.0.0.1
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USERNAME=postgres
 POSTGRES_PASSWORD=postgres
@@ -83,13 +83,13 @@ rails server
 bin/rails server -p 3000
 ```
 
-El servicio estará disponible en: `http://127.0.0.1:3000`
+El servicio estará disponible en: `http://localhost:3000`
 
 
 ### Verificar el servicio
 
 ```bash
-curl http://127.0.0.1:3000/api/v1/health_check
+curl http://localhost:3000/api/v1/health_check
 ```
 
 Respuesta esperada:
@@ -103,7 +103,7 @@ Respuesta esperada:
 
 ### Base URL
 ```
-http://127.0.0.1:3000/api/v1
+http://localhost:3000/api/v1
 ```
 
 **Nota:** El recurso de clientes está disponible en la ruta `/clientes` (en español).
@@ -138,10 +138,10 @@ Obtiene la lista de todos los clientes.
 **Ejemplo de solicitud:**
 ```bash
 # Listar todos los clientes
-curl "http://127.0.0.1:3000/api/v1/clientes"
+curl "http://localhost:3000/api/v1/clientes"
 
 # Buscar clientes por nombre o email
-curl "http://127.0.0.1:3000/api/v1/clientes?search=juan"
+curl "http://localhost:3000/api/v1/clientes?search=juan"
 ```
 
 **Respuesta exitosa (200 OK):**
@@ -175,7 +175,7 @@ Obtiene los detalles de un cliente específico.
 
 **Ejemplo de solicitud:**
 ```bash
-curl http://127.0.0.1:3000/api/v1/clientes/1
+curl http://localhost:3000/api/v1/clientes/1
 ```
 
 **Respuesta exitosa (200 OK):**
@@ -237,7 +237,7 @@ Content-Type: application/json
 
 **Ejemplo de solicitud:**
 ```bash
-curl -X POST http://127.0.0.1:3000/api/v1/clientes \
+curl -X POST http://localhost:3000/api/v1/clientes \
   -H "Content-Type: application/json" \
   -d '{
     "client": {

@@ -62,8 +62,8 @@ Crear un archivo `.env` en la raíz del proyecto:
 # PostgreSQL Database Configuration
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
-POSTGRES_USERNAME=manuel
-POSTGRES_PASSWORD=
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=postgres
 
 # Clients Service Configuration
 CLIENTS_SERVICE_URL=http://127.0.0.1:3000
