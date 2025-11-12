@@ -5,7 +5,20 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
     @invoices = Invoice.all
 
     if params[:client_id].present?
+      client = ClientsService.find_client(params[:client_id])
+
+      if client.nil?
+        return render json: {
+          success: false,
+          message: "Cliente no encontrado"
+        }, status: :not_found
+      end
+  
       @invoices = @invoices.by_client(params[:client_id])
+    end
+
+    if params[:invoice_number].present?
+      @invoices = @invoices.where(invoice_number: params[:invoice_number])
     end
 
     if params[:status].present?
