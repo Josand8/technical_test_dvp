@@ -1,0 +1,24 @@
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Datos de Docker
+docker-data/
+*.log
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+tmp/
+
