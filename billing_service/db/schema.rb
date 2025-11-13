@@ -10,32 +10,31 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_12_092641) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "pg_catalog.plpgsql"
-
+ActiveRecord::Schema[8.0].define(version: 2025_11_12_092641) do
   create_table "clients", force: :cascade do |t|
-    t.text "address"
-    t.datetime "created_at", null: false
-    t.string "email", null: false
-    t.string "identification"
     t.string "name", null: false
+    t.string "identification"
+    t.string "email", null: false
+    t.string "address"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_clients_on_created_at"
     t.index ["email"], name: "index_clients_on_email", unique: true
     t.index ["identification"], name: "index_clients_on_identification", unique: true
+    t.index ["name"], name: "index_clients_on_name"
   end
 
   create_table "invoices", force: :cascade do |t|
-    t.integer "client_id", null: false
-    t.datetime "created_at", null: false
-    t.date "due_date"
+    t.integer "client_id", precision: 38, null: false
     t.string "invoice_number", null: false
     t.date "issue_date", null: false
-    t.text "notes"
-    t.string "status", default: "pending"
+    t.date "due_date"
     t.decimal "subtotal", precision: 15, scale: 2, null: false
     t.decimal "tax", precision: 15, scale: 2, default: "0.0"
     t.decimal "total", precision: 15, scale: 2, null: false
+    t.string "status", default: "pending"
+    t.string "notes"
+    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["client_id"], name: "index_invoices_on_client_id"
     t.index ["created_at"], name: "index_invoices_on_created_at"
@@ -44,4 +43,5 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_092641) do
     t.index ["issue_date"], name: "index_invoices_on_issue_date"
     t.index ["status"], name: "index_invoices_on_status"
   end
+
 end

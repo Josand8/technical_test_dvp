@@ -1,4 +1,4 @@
-class CreateInvoices < ActiveRecord::Migration[8.1]
+class CreateInvoices < ActiveRecord::Migration[8.0]
   def change
     create_table :invoices do |t|
       t.integer :client_id, null: false
@@ -9,7 +9,7 @@ class CreateInvoices < ActiveRecord::Migration[8.1]
       t.decimal :tax, precision: 15, scale: 2, default: 0.0
       t.decimal :total, precision: 15, scale: 2, null: false
       t.string :status, default: 'pending'
-      t.text :notes
+      t.string :notes, null: true
 
       t.timestamps
     end

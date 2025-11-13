@@ -7,7 +7,7 @@ Mongo::Logger.logger.level = ::Logger::INFO
 MONGODB_CONFIG = {
   host: ENV.fetch("MONGODB_HOST") { "localhost" },
   port: ENV.fetch("MONGODB_PORT") { 27017 },
-  database: ENV.fetch("MONGODB_DATABASE") { "audit_service_#{Rails.env}" },
+  database: ENV.fetch("MONGODB_DATABASE") { "audit_service_#{Rails.env}_db" },
   username: ENV.fetch("MONGODB_USERNAME") { nil },
   password: ENV.fetch("MONGODB_PASSWORD") { nil }
 }

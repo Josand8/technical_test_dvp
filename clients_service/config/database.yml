@@ -1,47 +1,23 @@
-# PostgreSQL Database Configuration
-# Para usar PostgreSQL como base de datos compartida entre microservicios
-#
 default: &default
-  adapter: postgresql
-  encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
-  port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
-  username: <%= ENV.fetch("POSTGRES_USERNAME") { ENV["USER"] } %>
-  password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
+  adapter: oracle_enhanced
+  encoding: utf8
+  # TNS descriptor format - more reliable for Oracle XE
+  database: "(DESCRIPTION=
+    (ADDRESS_LIST=(ADDRESS=(PROTOCOL=tcp)(HOST=oracle)(PORT=1521)))
+    (CONNECT_DATA=(SERVICE_NAME=xepdb1))
+  )"
 
 development:
   <<: *default
-  database: clients_service_development
+  username: "invoice_app_<%= ENV.fetch('RAILS_ENV')%>_db"
+  password: <%= ENV.fetch("ORACLE_PASSWORD", "developmentpass") %>
 
-# Warning: The database defined as "test" will be erased and
-# re-generated from your development database when you run "rake".
-# Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: clients_service_test
+  username: "invoice_app_<%= ENV.fetch('RAILS_ENV')%>_db"
+  password: <%= ENV.fetch("ORACLE_PASSWORD", "developmentpass") %>
 
 production:
-  primary:
-    <<: *default
-    database: clients_service_production
-    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
-    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
-  cache:
-    <<: *default
-    database: clients_service_production
-    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
-    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
-    migrations_paths: db/cache_migrate
-  queue:
-    <<: *default
-    database: clients_service_production
-    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
-    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
-    migrations_paths: db/queue_migrate
-  cable:
-    <<: *default
-    database: clients_service_production
-    username: <%= ENV.fetch("POSTGRES_USERNAME") %>
-    password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
-    migrations_paths: db/cable_migrate
+  <<: *default
+  username: "invoice_app_<%= ENV.fetch('RAILS_ENV')%>_db"
+  password: <%= ENV.fetch("ORACLE_PASSWORD", "developmentpass") %>
