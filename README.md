@@ -186,7 +186,19 @@ docker-compose exec billing rails db:create db:migrate
 
 **Nota:** El servicio de auditoría no requiere migraciones ya que usa MongoDB.
 
-### Paso 6: Verificar que los servicios estén funcionando
+### Paso 6: Ejecutar seeds (datos iniciales)
+
+Opcionalmente, puedes ejecutar los seeds para cargar datos iniciales en las bases de datos:
+
+```bash
+# Seeds para Clients Service
+docker-compose exec clients rails db:seed
+
+# Seeds para Billing Service
+docker-compose exec billing rails db:seed
+```
+
+### Paso 7: Verificar que los servicios estén funcionando
 
 Prueba los endpoints de health check:
 
