@@ -33,10 +33,9 @@ El servicio estará disponible en: `http://127.0.0.1:3001`
 - [🚀 Ejecución](#-ejecución)
 - [📡 API Endpoints](#-api-endpoints)
 - [📊 Modelo de Datos](#-modelo-de-datos)
+- [🔗 Integraciones](#-integraciones)
 - [🔧 Comandos Útiles](#-comandos-útiles)
-- [📝 Notas Adicionales](#-notas-adicionales)
 - [🐛 Solución de Problemas](#-solución-de-problemas)
-- [🏗️ Arquitectura y Servicios](#️-arquitectura-y-servicios)
 
 ## 🛠 Requisitos
 
@@ -65,8 +64,12 @@ POSTGRES_PORT=5432
 POSTGRES_USERNAME=postgres
 POSTGRES_PASSWORD=postgres
 
-# Clients Service Configuration
+# Services Configuration
 CLIENTS_SERVICE_URL=http://127.0.0.1:3000
+AUDIT_SERVICE_URL=http://localhost:3002
+
+# Tributary Authority (optional) solo como ejemplo de una intregración futura
+TRIBUTARY_AUTHORITY_COUNTRY=other  # colombia, other
 ```
 
 ## 🗄️ Base de Datos
@@ -447,35 +450,43 @@ rails console
 > Invoice.includes(:client).all
 ```
 
+## 🔗 Integraciones
+
+### Clients Service
+
+El servicio se comunica con `clients_service` para:
+- Validar existencia de clientes antes de crear facturas
+- Obtener información del cliente en las respuestas JSON
+
+**Configuración:** `CLIENTS_SERVICE_URL=http://127.0.0.1:3000`
+
+### Audit Service
+
+Registra automáticamente eventos de auditoría:
+- ✅ Creación de facturas
+- ✅ Consulta de facturas
+- ✅ Errores de validación
+- ✅ Recursos no encontrados
+
+**Configuración:** `AUDIT_SERVICE_URL=http://localhost:3002`
+
+### Integración Tributaria (Factory Method)
+
+Arquitectura preparada para integración futura con entidades tributarias (DIAN, SAT, SUNAT, etc.).
+
+**Archivos:**
+- `app/services/tributary_authorities/` - Adaptadores y Factory
+- Ver [DIAN_FUTURE_IMPLEMENTATION.md](./DIAN_FUTURE_IMPLEMENTATION.md) para más detalles
+
+**Configuración:** `TRIBUTARY_AUTHORITY_COUNTRY=colombia|other`
+
 ## 📝 Notas Adicionales
 
-### Integración con Servicio de Clientes
-
-- El servicio comparte la base de datos PostgreSQL con `clients_service`
-- Los clientes deben existir antes de crear facturas
-- La validación de existencia del cliente se realiza mediante una llamada HTTP al `clients_service`
-- Configure la variable de entorno `CLIENTS_SERVICE_URL` para apuntar al servicio de clientes
-- Las facturas incluyen información del cliente en las respuestas JSON obtenida del servicio de clientes
-
-### Funcionalidades Automáticas
-
-- **Número de factura**: Se genera automáticamente en formato `INV-YYYYMMDD-XXXX`
-- **Cálculo de total**: Se calcula automáticamente sumando `subtotal + tax`
-- **Fecha de emisión**: Si no se proporciona, se establece la fecha actual
-- **Detección de facturas vencidas**: Las facturas con estado 'pending' y `due_date` anterior a la fecha actual se marcan automáticamente como 'overdue'
-  - Esta verificación se realiza al listar y obtener facturas
-  - También se verifica al validar el modelo antes de guardar
-
-### Formato de Respuestas
-
-- El campo `updated_at` no se incluye en las respuestas JSON
-- Los montos se retornan como strings con formato decimal (ej: "1000.0")
-- Las facturas están ordenadas por fecha de creación (más recientes primero) al listarlas
-
-### Configuración de Puertos
-
-- Se recomienda correr este servicio en un puerto diferente al servicio de clientes
-- Puerto recomendado: 3001 (clientes usa 3000)
+- **Base de datos compartida**: Comparte PostgreSQL con `clients_service`
+- **Número de factura**: Auto-generado en formato `INV-YYYYMMDD-XXXX`
+- **Cálculo automático**: `total = subtotal + tax`
+- **Detección de vencidas**: Facturas `pending` con `due_date` pasada se marcan como `overdue`
+- **Puerto recomendado**: 3001
 
 ## 🐛 Solución de Problemas
 
@@ -509,47 +520,23 @@ Verifica que:
 - La URL configurada en `CLIENTS_SERVICE_URL` sea correcta
 - Revisa los logs del servicio para ver si hay errores de conexión
 
-## 🏗️ Arquitectura y Servicios
-
-### ClientsService
-
-El servicio incluye una clase `ClientsService` que actúa como cliente HTTP para comunicarse con el `clients_service`:
-
-**Ubicación**: `app/services/clients_service.rb`
-
-**Métodos disponibles:**
-- `ClientsService.find_client(client_id)` - Obtiene información de un cliente
-- `ClientsService.client_exists?(client_id)` - Verifica si un cliente existe
-
-**Configuración:**
-- URL del servicio: Variable de entorno `CLIENTS_SERVICE_URL` (default: `http://127.0.0.1:3000`)
-- Manejo de errores: Captura y registra errores de conexión en los logs
-- Retorna `nil` si el servicio no está disponible o el cliente no existe
-
-### Dependencias Rails 8
-
-El proyecto usa las nuevas funcionalidades de Rails 8.1:
-- **Solid Cache**: Cache respaldado por base de datos
-- **Solid Queue**: Sistema de colas de trabajos respaldado por base de datos
-- **Solid Cable**: WebSockets respaldados por base de datos
-
 ### Estructura del Proyecto
 
 ```
 billing_service/
 ├── app/
-│   ├── controllers/
-│   │   └── api/v1/
-│   │       ├── application_controller.rb
-│   │       └── invoices_controller.rb
+│   ├── controllers/api/v1/
+│   │   └── invoices_controller.rb
 │   ├── models/
 │   │   └── invoice.rb
 │   └── services/
-│       └── clients_service.rb
-├── config/
-│   ├── routes.rb
-│   └── ...
-└── db/
-    └── migrate/
-        └── 20251112092641_create_invoices.rb
+│       ├── clients_service.rb
+│       ├── audit_service.rb
+│       └── tributary_authorities/
+│           ├── base_adapter.rb
+│           ├── dian_adapter.rb
+│           ├── other_adapter.rb
+│           └── factory.rb
+└── db/migrate/
+    └── 20251112092641_create_invoices.rb
 ```
