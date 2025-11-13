@@ -9,7 +9,7 @@ development:
       # Otherwise define the parameters separately.
       # This defines the name of the default database that Mongoid can connect to.
       # (required).
-      database: <%= ENV.fetch("MONGODB_DATABASE") { "audit_service_development" } %>
+      database: "audit_service_<%= ENV.fetch('RAILS_ENV') %>_db"
       # Provides the hosts the default client can connect to. Must be an array
       # of host:port pairs. (required)
       hosts:
@@ -178,7 +178,7 @@ development:
 test:
   clients:
     default:
-      database: <%= ENV.fetch("MONGODB_DATABASE") { "audit_service_test" } %>
+      database: "audit_service_<%= ENV.fetch('RAILS_ENV') %>_db"
       hosts:
         - <%= ENV.fetch("MONGODB_HOST") { "localhost" } %>:<%= ENV.fetch("MONGODB_PORT") { 27017 } %>
       options:
@@ -189,7 +189,7 @@ test:
 production:
   clients:
     default:
-      database: <%= ENV.fetch("MONGODB_DATABASE") { "audit_service_production" } %>
+      database: "audit_service_<%= ENV.fetch('RAILS_ENV') %>_db"
       hosts:
         - <%= ENV.fetch("MONGODB_HOST") { "localhost" } %>:<%= ENV.fetch("MONGODB_PORT") { 27017 } %>
       options:

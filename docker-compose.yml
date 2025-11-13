@@ -1,0 +1,64 @@
+services:
+
+  oracle:
+    image: container-registry.oracle.com/database/express:18.4.0-xe
+    ports:
+      - "1521:1521"
+    environment:
+      # Set a strong password for the SYS, SYSTEM, and PDBADMIN accounts
+      ORACLE_PWD: developmentpass
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  clients:
+    build:
+      context: ./clients_service
+      dockerfile: Dockerfile
+    command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./clients_service:/app
+    depends_on:
+      - oracle
+    env_file:
+      - ./clients_service/.env
+
+  billing:
+    build:
+      context: ./billing_service
+      dockerfile: Dockerfile
+    command: bundle exec rails s -p 3001 -b '0.0.0.0'
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./billing_service:/app
+    depends_on:
+      - oracle
+    env_file:
+      - ./billing_service/.env
+
+  audit:
+    build:
+      context: ./audit_service
+      dockerfile: Dockerfile
+    command: bundle exec rackup -p 3002 -o 0.0.0.0
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./audit_service:/app
+    depends_on:
+      - mongodb
+    env_file:
+      - ./audit_service/.env
+
+volumes:
+  oracle_data:
+  mongo_data:
