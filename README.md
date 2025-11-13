@@ -172,21 +172,57 @@ Deberías ver todos los servicios con estado `Up`:
 - `billing`
 - `audit`
 
-### Paso 5: Ejecutar migraciones de base de datos
+### Paso 5: Crear las bases de datos en Oracle
+
+Antes de ejecutar las migraciones, es necesario crear los usuarios de base de datos en Oracle. Ejecuta los siguientes comandos:
+
+1. Accede al contenedor de Oracle:
+
+```bash
+docker-compose exec oracle bash
+```
+
+2. Conéctate a SQL*Plus:
+
+```bash
+sqlplus SYSTEM/developmentpass@oracle:1521/xepdb1
+```
+
+3. Ejecuta los siguientes comandos SQL para crear los usuarios y otorgar permisos:
+
+```sql
+CREATE USER invoice_app_production_db IDENTIFIED BY "productionpass";
+CREATE USER invoice_app_development_db IDENTIFIED BY "developmentpass";
+CREATE USER invoice_app_test_db IDENTIFIED BY "testpass";
+
+GRANT CONNECT, RESOURCE, DBA TO invoice_app_production_db;
+GRANT CONNECT, RESOURCE, DBA TO invoice_app_development_db;
+GRANT CONNECT, RESOURCE, DBA TO invoice_app_test_db;
+
+GRANT UNLIMITED TABLESPACE TO invoice_app_production_db;
+GRANT UNLIMITED TABLESPACE TO invoice_app_development_db;
+GRANT UNLIMITED TABLESPACE TO invoice_app_test_db;
+```
+
+4. Sal de SQL*Plus escribiendo `exit` y luego sal del contenedor con `exit` nuevamente.
+
+**Nota:** Asegúrate de que Oracle esté completamente inicializado antes de ejecutar estos comandos. Si encuentras errores de conexión, espera unos minutos y vuelve a intentarlo.
+
+### Paso 6: Ejecutar migraciones de base de datos
 
 Una vez que los servicios estén corriendo, ejecuta las migraciones:
 
 ```bash
 # Migraciones para Clients Service
-docker-compose exec clients rails db:create db:migrate
+docker-compose exec clients rails db:migrate
 
 # Migraciones para Billing Service
-docker-compose exec billing rails db:create db:migrate
+docker-compose exec billing rails db:migrate
 ```
 
 **Nota:** El servicio de auditoría no requiere migraciones ya que usa MongoDB.
 
-### Paso 6: Ejecutar seeds (datos iniciales)
+### Paso 7: Ejecutar seeds (datos iniciales)
 
 Opcionalmente, puedes ejecutar los seeds para cargar datos iniciales en las bases de datos:
 
@@ -198,7 +234,7 @@ docker-compose exec clients rails db:seed
 docker-compose exec billing rails db:seed
 ```
 
-### Paso 7: Verificar que los servicios estén funcionando
+### Paso 8: Verificar que los servicios estén funcionando
 
 Prueba los endpoints de health check:
 
