@@ -28,13 +28,61 @@ class Api::V1::AuditLogController < Api::V1::ApplicationController
 
     if @audit_logs.any?
       render json: {
-      success: true,
-      data: @audit_logs.as_json
-    }, status: :ok
+        success: true,
+        data: @audit_logs.as_json
+      }, status: :ok
     else
       render json: {
         success: false,
         message: "No se encontraron logs para la resource con id #{params[:resource_id]}"
+      }, status: :not_found
+    end
+  end
+
+  def show_invoice
+    @audit_logs = AuditLog.where(resource_type: 'invoice', resource_id: params[:factura_id])
+                              .order(created_at: :desc)
+
+    if @audit_logs.any?
+      stats = calculate_stats(@audit_logs)
+      
+      render json: {
+        success: true,
+        data: {
+          factura_id: params[:factura_id],
+          total_eventos: @audit_logs.count,
+          estadisticas: stats,
+          eventos: @audit_logs.as_json
+        }
+      }, status: :ok
+    else
+      render json: {
+        success: false,
+        message: "No se encontraron logs de auditoría para la factura #{params[:factura_id]}"
+      }, status: :not_found
+    end
+  end
+
+  def show_client
+    @audit_logs = AuditLog.where(resource_type: 'client', resource_id: params[:cliente_id])
+                              .order(created_at: :desc)
+
+    if @audit_logs.any?
+      stats = calculate_stats(@audit_logs)
+      
+      render json: {
+        success: true,
+        data: {
+          cliente_id: params[:cliente_id],
+          total_eventos: @audit_logs.count,
+          estadisticas: stats,
+          eventos: @audit_logs.as_json
+        }
+      }, status: :ok
+    else
+      render json: {
+        success: false,
+        message: "No se encontraron logs de auditoría para el cliente #{params[:cliente_id]}"
       }, status: :not_found
     end
   end
@@ -61,5 +109,15 @@ class Api::V1::AuditLogController < Api::V1::ApplicationController
 
   def audit_log_params
     params.require(:audit_log).permit(:resource_type, :resource_id, :action, :changes_made, :status, :error_message)
+  end
+
+  def calculate_stats(audit_logs)
+    {
+      total: audit_logs.count,
+      por_accion: audit_logs.group_by(&:action).transform_values(&:count),
+      por_estado: audit_logs.group_by(&:status).transform_values(&:count),
+      primer_evento: audit_logs.last&.created_at,
+      ultimo_evento: audit_logs.first&.created_at
+    }
   end
 end

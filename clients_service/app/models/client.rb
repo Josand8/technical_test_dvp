@@ -1,4 +1,6 @@
 class Client < ApplicationRecord
+  include Auditable
+
   validates :name, presence: { message: "no puede estar vacío" },
                    length: { minimum: 2, maximum: 100, message: "debe tener entre 2 y 100 caracteres" }
   

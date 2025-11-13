@@ -1,5 +1,6 @@
 class Api::V1::ClientsController < Api::V1::ApplicationController
   before_action :set_client, only: [:show]
+  after_action :audit_show, only: [:show]
 
   def index
     @clients = Client.all
@@ -62,6 +63,19 @@ class Api::V1::ClientsController < Api::V1::ApplicationController
       :email,
       :address
     )
+  end
+
+  def audit_show
+    return unless @client
+
+    AuditPublisherService.publish(
+      resource_type: 'client',
+      resource_id: @client.id,
+      action: 'read',
+      status: 'success'
+    )
+  rescue StandardError => e
+    Rails.logger.error "Failed to audit show action: #{e.message}"
   end
 end
 

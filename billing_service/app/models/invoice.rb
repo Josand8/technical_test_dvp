@@ -1,4 +1,6 @@
 class Invoice < ApplicationRecord
+  include Auditable
+
   validates :invoice_number, presence: { message: "no puede estar vacío" },
                              uniqueness: { message: "ya está registrado" }
   

@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+require_relative "../config/boot"
+require_relative "../config/environment"
+
+puts "=" * 80
+puts "AUDIT CONSUMER SERVICE"
+puts "=" * 80
+puts "Environment: #{Rails.env}"
+puts "RabbitMQ Host: #{ENV.fetch('RABBITMQ_HOST', 'localhost')}:#{ENV.fetch('RABBITMQ_PORT', 5672)}"
+puts "MongoDB: #{ENV.fetch('MONGODB_HOST', 'localhost')}:#{ENV.fetch('MONGODB_PORT', 27017)}"
+puts "=" * 80
+puts ""
+puts "Starting consumer... Press Ctrl+C to stop"
+puts ""
+
+begin
+  AuditConsumerJob.perform_now
+rescue Interrupt
+  puts "\n\nConsumer stopped gracefully"
+  exit 0
+rescue StandardError => e
+  puts "\n\nError: #{e.message}"
+  puts e.backtrace.first(5).join("\n")
+  exit 1
+end
+

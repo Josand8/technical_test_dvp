@@ -1,5 +1,6 @@
 class Api::V1::InvoicesController < Api::V1::ApplicationController
   before_action :set_invoice, only: [:show]
+  after_action :audit_show, only: [:show]
 
   def index
     @invoices = Invoice.all
@@ -169,6 +170,19 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
       :status,
       :notes
     )
+  end
+
+  def audit_show
+    return unless @invoice
+
+    AuditPublisherService.publish(
+      resource_type: 'invoice',
+      resource_id: @invoice.id,
+      action: 'read',
+      status: 'success'
+    )
+  rescue StandardError => e
+    Rails.logger.error "Failed to audit show action: #{e.message}"
   end
 end
 
