@@ -9,10 +9,10 @@ Microservicio para la gestión de clientes desarrollado con Ruby on Rails 8.1 y 
 - [🗄️ Base de Datos](#️-base-de-datos)
 - [🚀 Ejecución](#-ejecución)
 - [📡 API Endpoints](#-api-endpoints)
+- [🔗 Integraciones](#-integraciones)
 - [🧪 Testing](#-testing)
 - [📊 Modelo de Datos](#-modelo-de-datos)
 - [🔧 Comandos Útiles](#-comandos-útiles)
-- [📝 Notas Adicionales](#-notas-adicionales)
 - [🐛 Solución de Problemas](#-solución-de-problemas)
 
 ## 🛠 Requisitos
@@ -39,6 +39,9 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USERNAME=postgres
 POSTGRES_PASSWORD=postgres
+
+# Services Configuration
+AUDIT_SERVICE_URL=http://localhost:3002
 ```
 
 ## 🗄️ Base de Datos
@@ -279,34 +282,44 @@ curl -X POST http://localhost:3000/api/v1/clientes \
 
 ---
 
+## 🔗 Integraciones
+
+### Audit Service
+
+Registra automáticamente eventos de auditoría:
+- ✅ Creación de clientes
+- ✅ Consulta de clientes
+- ✅ Errores de validación
+- ✅ Recursos no encontrados
+
+**Configuración:** `AUDIT_SERVICE_URL=http://localhost:3002`
+
 ## 🧪 Testing
 
 ### Ejecutar todos los tests
 
 ```bash
-rails test
+bundle exec rspec
 ```
 
 ### Ejecutar tests específicos
 
 ```bash
 # Tests del modelo
-rails test test/models/client_test.rb
+bundle exec rspec spec/models/
 
 # Tests del controlador
-rails test test/controllers/api/v1/clients_controller_test.rb
+bundle exec rspec spec/controllers/
 ```
 
-### Tests con cobertura
+### Cobertura de Tests
 
 El proyecto incluye tests para:
-
 - ✅ Validaciones del modelo (name, email, identification, address)
 - ✅ Callbacks y normalizaciones (email lowercase, identificación sin espacios)
 - ✅ Scopes y consultas (búsqueda por nombre y email)
 - ✅ Endpoints de la API (index, show, create)
 - ✅ Respuestas de error (404, 422)
-- ✅ Búsqueda por nombre y email
 
 ## 📊 Modelo de Datos
 
@@ -360,12 +373,11 @@ brakeman
 
 ## 📝 Notas Adicionales
 
-- El servicio utiliza PostgreSQL como motor de base de datos compartido entre microservicios
-- Todos los endpoints retornan JSON
-- Los emails se normalizan automáticamente a minúsculas antes de guardar
-- Los números de identificación se normalizan eliminando espacios antes de guardar
-- Las búsquedas no distinguen entre mayúsculas y minúsculas (case insensitive)
-- El campo `updated_at` no se incluye en las respuestas JSON
+- **Base de datos compartida**: PostgreSQL compartida con `billing_service`
+- **Normalización automática**: Emails a minúsculas, identificación sin espacios
+- **Búsquedas**: No distinguen entre mayúsculas y minúsculas
+- **Respuestas JSON**: Campo `updated_at` no incluido
+- **Puerto recomendado**: 3000
 
 ## 🐛 Solución de Problemas
 
