@@ -85,6 +85,8 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
   end
 
   def show
+    AuditService.log_read('invoice', @invoice.id)
+    
     check_and_update_overdue(@invoice)
     invoice_json = @invoice.as_json(except: [:updated_at])
     
@@ -110,6 +112,8 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
     @invoice = Invoice.new(invoice_params)
 
     if @invoice.save
+      AuditService.log_create('invoice', @invoice.id, invoice_params.to_h)
+      
       invoice_json = @invoice.as_json(except: [:updated_at])
       
       client_data = ClientsService.find_client(@invoice.client_id)
@@ -128,6 +132,8 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
         data: invoice_json
       }, status: :created
     else
+      AuditService.log_error('invoice', 'unknown', @invoice.errors.full_messages.join(', '), 'create')
+      
       render json: {
         success: false,
         message: "No se pudo crear la factura",
@@ -142,6 +148,8 @@ class Api::V1::InvoicesController < Api::V1::ApplicationController
     @invoice = Invoice.find_by(id: params[:id])
     
     unless @invoice
+      AuditService.log_error('invoice', params[:id], 'Factura no encontrada', 'read')
+      
       render json: {
         success: false,
         message: "Factura no encontrada"

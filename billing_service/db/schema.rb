@@ -26,7 +26,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_092641) do
   end
 
   create_table "invoices", force: :cascade do |t|
-    t.bigint "client_id", null: false
+    t.integer "client_id", null: false
     t.datetime "created_at", null: false
     t.date "due_date"
     t.string "invoice_number", null: false
@@ -38,9 +38,10 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_12_092641) do
     t.decimal "total", precision: 15, scale: 2, null: false
     t.datetime "updated_at", null: false
     t.index ["client_id"], name: "index_invoices_on_client_id"
+    t.index ["created_at"], name: "index_invoices_on_created_at"
+    t.index ["due_date"], name: "index_invoices_on_due_date"
     t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
+    t.index ["issue_date"], name: "index_invoices_on_issue_date"
     t.index ["status"], name: "index_invoices_on_status"
   end
-
-  add_foreign_key "invoices", "clients"
 end

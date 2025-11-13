@@ -18,6 +18,8 @@ class Api::V1::ClientsController < Api::V1::ApplicationController
   end
 
   def show
+    AuditService.log_read('client', @client.id)
+    
     render json: {
       success: true,
       data: @client.as_json(except: [:updated_at])
@@ -28,12 +30,16 @@ class Api::V1::ClientsController < Api::V1::ApplicationController
     @client = Client.new(client_params)
 
     if @client.save
+      AuditService.log_create('client', @client.id, client_params.to_h)
+      
       render json: {
         success: true,
         message: "Cliente creado exitosamente",
         data: @client.as_json(except: [:updated_at])
       }, status: :created
     else
+      AuditService.log_error('client', 'unknown', @client.errors.full_messages.join(', '), 'create')
+      
       render json: {
         success: false,
         message: "No se pudo crear el cliente",
@@ -48,6 +54,8 @@ class Api::V1::ClientsController < Api::V1::ApplicationController
     @client = Client.find_by(id: params[:id])
     
     unless @client
+      AuditService.log_error('client', params[:id], 'Cliente no encontrado', 'read')
+      
       render json: {
         success: false,
         message: "Cliente no encontrado"

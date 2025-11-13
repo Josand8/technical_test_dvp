@@ -16,6 +16,10 @@ class CreateInvoices < ActiveRecord::Migration[8.1]
 
     add_index :invoices, :invoice_number, unique: true
     add_index :invoices, :status
+    add_index :invoices, :client_id
+    add_index :invoices, :issue_date
+    add_index :invoices, :created_at
+    add_index :invoices, :due_date
   end
 end
 

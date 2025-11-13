@@ -24,17 +24,21 @@ class Api::V1::AuditLogController < Api::V1::ApplicationController
 
   def show
     @audit_logs = AuditLog.where(resource_id: params[:resource_id])
-                              .order(created_at: :desc)
+    
+    @audit_logs = @audit_logs.where(resource_type: params[:resource_type]) if params[:resource_type].present?
+    
+    @audit_logs = @audit_logs.order(created_at: :desc)
 
     if @audit_logs.any?
       render json: {
-      success: true,
-      data: @audit_logs.as_json
-    }, status: :ok
+        success: true,
+        data: @audit_logs.as_json,
+        total_audit_logs: @audit_logs.count
+      }, status: :ok
     else
       render json: {
         success: false,
-        message: "No se encontraron logs para la resource con id #{params[:resource_id]}"
+        message: "No se encontraron logs para el recurso #{params[:resource_type]} con id #{params[:resource_id]}"
       }, status: :not_found
     end
   end
@@ -60,6 +64,6 @@ class Api::V1::AuditLogController < Api::V1::ApplicationController
   private
 
   def audit_log_params
-    params.require(:audit_log).permit(:resource_type, :resource_id, :action, :changes_made, :status, :error_message)
+    params.require(:audit_log).permit(:resource_type, :resource_id, :action, :status, :error_message, changes_made: {})
   end
 end

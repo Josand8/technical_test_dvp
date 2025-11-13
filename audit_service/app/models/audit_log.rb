@@ -5,7 +5,7 @@ class AuditLog < ApplicationDocument
   field :resource_type, type: String
   field :resource_id, type: String
   field :action, type: String
-  field :changes_made, type: Hash
+  field :changes_made, type: Hash, default: {}
   field :status, type: String
   field :error_message, type: String
   field :created_at, type: DateTime
@@ -18,8 +18,11 @@ class AuditLog < ApplicationDocument
   before_create :set_created_at
 
   index({ resource_type: 1, resource_id: 1 })
+  index({ resource_id: 1 })
   index({ created_at: -1 })
   index({ status: 1 })
+  index({ status: 1, created_at: -1 })
+  index({ resource_type: 1, status: 1, created_at: -1 })
 
   private
 

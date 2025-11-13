@@ -26,8 +26,8 @@ invoices_data = [
     client_id: client_ids[2],
     subtotal: 500.00,
     tax: 95.00,
-    issue_date: Date.current - 60.days,
-    due_date: Date.current - 30.days,
+    issue_date: Date.current,
+    due_date: Date.current + 30.days,
     status: 'paid',
     notes: 'Mantenimiento mensual'
   },
@@ -35,8 +35,8 @@ invoices_data = [
     client_id: client_ids[0],
     subtotal: 1500.00,
     tax: 285.00,
-    issue_date: Date.current - 45.days,
-    due_date: Date.current - 15.days,
+    issue_date: Date.current,
+    due_date: Date.current + 15.days,
     status: 'overdue',
     notes: 'Soporte técnico especializado'
   },

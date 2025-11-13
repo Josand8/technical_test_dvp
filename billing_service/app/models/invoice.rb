@@ -4,6 +4,7 @@ class Invoice < ApplicationRecord
   
   validates :issue_date, presence: { message: "no puede estar vacío" }
   validate :issue_date_cannot_be_in_past
+  validate :due_date_cannot_be_in_past
   
   validates :subtotal, presence: { message: "no puede estar vacío" },
                        numericality: { greater_than_or_equal_to: 0, message: "debe ser mayor o igual a 0" }
@@ -80,6 +81,14 @@ class Invoice < ApplicationRecord
     
     if issue_date < Date.current
       errors.add(:issue_date, "no puede ser anterior a la fecha actual")
+    end
+  end
+
+  def due_date_cannot_be_in_past
+    return if due_date.blank?
+    
+    if due_date < Date.current
+      errors.add(:due_date, "no puede ser anterior a la fecha actual")
     end
   end
 end

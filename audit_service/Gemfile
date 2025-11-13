@@ -42,3 +42,9 @@ group :development, :test do
 
   gem "dotenv-rails"
 end
+
+group :test do
+  gem "rspec-rails", "~> 6.0"
+  gem "factory_bot_rails", "~> 6.2"
+  gem "mongoid-rspec", "~> 4.2"
+end

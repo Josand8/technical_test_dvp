@@ -11,6 +11,8 @@ class CreateClients < ActiveRecord::Migration[8.1]
 
     add_index :clients, :email, unique: true
     add_index :clients, :identification, unique: true
+    add_index :clients, :name
+    add_index :clients, :created_at
   end
 end
 
