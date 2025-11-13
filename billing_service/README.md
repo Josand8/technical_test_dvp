@@ -1,271 +1,304 @@
-# Servicio de Facturación - API REST
+# 📄 Servicio de Facturación
 
-Microservicio para la gestión de facturas desarrollado con Ruby on Rails 8.1 y PostgreSQL.
+Microservicio para gestionar facturas del sistema. Permite crear, consultar y filtrar facturas, con integración automática con el servicio de clientes y auditoría.
 
-**Nota importante:** Este servicio comparte la misma base de datos con el servicio de clientes (`clients_service`).
+## 🛠️ Tecnologías
 
-## 🚀 Inicio Rápido
+- **Ruby**: 3.4.3
+- **Rails**: 8.0.4
+- **Base de datos**: Oracle Enhanced Adapter (~> 8.0.0)
+- **Testing**: RSpec
+- **Jobs**: Solid Queue (para actualización de facturas vencidas)
+- **Docker**: Compatible
 
-```bash
-# 1. Instalar dependencias
-bundle install
+## 📋 Requisitos Previos
 
-# 2. Configurar variables de entorno
-cp .env.example .env  # o crear manualmente
+- Ruby 3.4.3
+- Bundler 2.4.19
+- Oracle Database XE (contenedor Docker)
+- Docker y Docker Compose (para entorno completo)
 
-# 3. Ejecutar migraciones (requiere clients_service configurado)
-rails db:migrate
+## 🔧 Variables de Entorno
 
-# 4. Cargar datos de prueba (opcional)
-rails db:seed
-
-# 5. Iniciar el servidor
-rails server -p 3001
-```
-
-El servicio estará disponible en: `http://127.0.0.1:3001`
-
-## 📋 Tabla de Contenidos
-
-- [🛠 Requisitos](#-requisitos)
-- [⚙️ Configuración](#️-configuración)
-- [🗄️ Base de Datos](#️-base-de-datos)
-- [🚀 Ejecución](#-ejecución)
-- [📡 API Endpoints](#-api-endpoints)
-- [📊 Modelo de Datos](#-modelo-de-datos)
-- [🔗 Integraciones](#-integraciones)
-- [🔧 Comandos Útiles](#-comandos-útiles)
-- [🐛 Solución de Problemas](#-solución-de-problemas)
-
-## 🛠 Requisitos
-
-- Ruby 3.3.6 o superior
-- Rails 8.1.1
-- PostgreSQL 14 o superior
-- Servicio de clientes (`clients_service`) configurado y corriendo
-- Gema `dotenv-rails` para manejo de variables de entorno (desarrollo)
-
-## ⚙️ Configuración
-
-### 1. Instalar dependencias
-
-```bash
-bundle install
-```
-
-### 2. Configurar variables de entorno
-
-Crear un archivo `.env` en la raíz del proyecto:
+Crea un archivo `.env` en la raíz del servicio:
 
 ```env
-# PostgreSQL Database Configuration
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USERNAME=postgres
-POSTGRES_PASSWORD=postgres
+# Base de datos Oracle
+ORACLE_PASSWORD=developmentpass
+RAILS_ENV=development
 
-# Services Configuration
-CLIENTS_SERVICE_URL=http://127.0.0.1:3000
-AUDIT_SERVICE_URL=http://localhost:3002
-
-# Tributary Authority (optional) solo como ejemplo de una intregración futura
-TRIBUTARY_AUTHORITY_COUNTRY=other  # colombia, other
+# Servicios externos
+CLIENTS_SERVICE_URL=http://clients_service:3000
+AUDIT_SERVICE_URL=http://audit_service:3002
 ```
 
-## 🗄️ Base de Datos
+## 🚀 Instalación
 
-### Ejecutar migraciones
-
-**Importante:** El servicio de clientes debe estar configurado primero.
+### Opción 1: Con Docker (Recomendado)
 
 ```bash
-# Ejecutar migraciones (crea la tabla invoices)
+# Desde la raíz del proyecto principal
+docker-compose up billing_service
+```
+
+### Opción 2: Local
+
+```bash
+# Instalar dependencias
+bundle install
+
+# Configurar base de datos
+rails db:create
 rails db:migrate
 
-# Cargar datos de ejemplo (opcional)
-rails db:seed
-```
-
-### Estructura de la tabla `invoices`
-
-| Campo | Tipo | Descripción | Restricciones |
-|-------|------|-------------|---------------|
-| id | SERIAL | Identificador único | Primary Key |
-| client_id | INTEGER | ID del cliente | NOT NULL, Foreign Key → clients.id |
-| invoice_number | VARCHAR | Número de factura | NOT NULL, único, auto-generado |
-| issue_date | DATE | Fecha de emisión | NOT NULL, default: fecha actual |
-| due_date | DATE | Fecha de vencimiento | Opcional |
-| subtotal | DECIMAL(15,2) | Subtotal | NOT NULL, >= 0 |
-| tax | DECIMAL(15,2) | Impuestos | Default: 0.0, >= 0 |
-| total | DECIMAL(15,2) | Total | NOT NULL, calculado automáticamente |
-| status | VARCHAR | Estado | pending, paid, overdue, cancelled |
-| notes | TEXT | Notas adicionales | Opcional |
-| created_at | TIMESTAMP | Fecha de creación | |
-
-### Índices
-
-- `index_invoices_on_invoice_number` (UNIQUE)
-- `index_invoices_on_status`
-
-## 🚀 Ejecución
-
-### Modo desarrollo
-
-```bash
-# Puerto 3001 para no conflictuar con clients_service
+# Iniciar servidor
 rails server -p 3001
-```
-
-El servicio estará disponible en: `http://127.0.0.1:3001`
-
-### Verificar el servicio
-
-```bash
-curl http://127.0.0.1:3001/api/v1/health_check
-```
-
-Respuesta esperada:
-```json
-{
-  "status": "Billing Service is running"
-}
 ```
 
 ## 📡 API Endpoints
 
-### Base URL
-```
-http://127.0.0.1:3001/api/v1
-```
-
 ### Health Check
-
-**GET** `/api/v1/health_check`
-
-Verifica el estado del servicio.
-
-**Respuesta:**
-```json
-{
-  "status": "Billing Service is running"
-}
 ```
-
----
+GET /api/v1/health_check
+```
 
 ### Listar Facturas
-
-**GET** `/api/v1/facturas`
-
-Obtiene la lista de todas las facturas con información del cliente.
-
-**Parámetros de consulta (opcionales):**
-
-| Parámetro | Tipo | Descripción |
-|-----------|------|-------------|
-| client_id | Integer | Filtrar por ID de cliente |
-| status | String | Filtrar por estado (pending, paid, overdue, cancelled) |
-| fechaInicio | Date | Filtrar facturas desde esta fecha (formato: YYYY-MM-DD) |
-| fechaFin | Date | Filtrar facturas hasta esta fecha (formato: YYYY-MM-DD) |
-
-**Ejemplo de solicitud:**
-```bash
-# Listar todas las facturas
-curl "http://127.0.0.1:3001/api/v1/facturas"
-
-# Filtrar por cliente
-curl "http://127.0.0.1:3001/api/v1/facturas?client_id=1"
-
-# Filtrar por estado
-curl "http://127.0.0.1:3001/api/v1/facturas?status=pending"
-
-# Filtrar por rango de fechas
-curl "http://127.0.0.1:3001/api/v1/facturas?fechaInicio=2025-01-01&fechaFin=2025-12-31"
-
-# Filtrar facturas desde una fecha
-curl "http://127.0.0.1:3001/api/v1/facturas?fechaInicio=2025-11-01"
+```
+GET /api/v1/facturas
 ```
 
-**Respuesta exitosa (200 OK):**
+**Parámetros opcionales:**
+- `client_id`: Filtra por ID del cliente
+- `invoice_number`: Filtra por número de factura
+- `status`: Filtra por estado (`pending`, `paid`, `overdue`, `cancelled`)
+- `fechaInicio`: Fecha inicio (formato: YYYY-MM-DD)
+- `fechaFin`: Fecha fin (formato: YYYY-MM-DD)
+
+**Respuesta exitosa:**
 ```json
 {
   "success": true,
   "data": [
     {
       "id": 1,
+      "invoice_number": "INV-20240101-0001",
       "client_id": 1,
-      "invoice_number": "INV-20251112-0001",
-      "issue_date": "2025-11-12",
-      "due_date": "2025-12-12",
-      "subtotal": "1000.0",
-      "tax": "190.0",
-      "total": "1190.0",
+      "issue_date": "2024-01-01",
+      "due_date": "2024-01-31",
+      "subtotal": "100.00",
+      "tax": "19.00",
+      "total": "119.00",
       "status": "pending",
-      "notes": "Factura por servicios de consultoría",
-      "created_at": "2025-11-12T09:30:00.000Z",
+      "notes": "Factura de servicios",
+      "created_at": "2024-01-01T00:00:00.000Z",
       "client": {
         "id": 1,
         "name": "Juan Pérez",
-        "email": "juanperez@gmail.com"
+        "email": "juan@example.com"
       }
     }
   ],
-  "total_invoices": 5
+  "total_invoices": 1
 }
 ```
-
-**Respuesta de error (400 Bad Request):**
-```json
-{
-  "success": false,
-  "message": "Formato de fecha inválido. Use formato YYYY-MM-DD"
-}
-```
-
----
 
 ### Obtener Factura
-
-**GET** `/api/v1/facturas/:id`
-
-Obtiene los detalles de una factura específica con información completa del cliente.
-
-**Parámetros de ruta:**
-- `id` (requerido): ID de la factura
-
-**Ejemplo de solicitud:**
-```bash
-curl http://127.0.0.1:3001/api/v1/facturas/1
+```
+GET /api/v1/facturas/:id
 ```
 
-**Respuesta exitosa (200 OK):**
+**Respuesta exitosa:**
 ```json
 {
   "success": true,
   "data": {
     "id": 1,
+    "invoice_number": "INV-20240101-0001",
     "client_id": 1,
-    "invoice_number": "INV-20251112-0001",
-    "issue_date": "2025-11-12",
-    "due_date": "2025-12-12",
-    "subtotal": "1000.0",
-    "tax": "190.0",
-    "total": "1190.0",
+    "issue_date": "2024-01-01",
+    "due_date": "2024-01-31",
+    "subtotal": "100.00",
+    "tax": "19.00",
+    "total": "119.00",
     "status": "pending",
-    "notes": "Factura por servicios de consultoría",
-    "created_at": "2025-11-12T09:30:00.000Z",
+    "notes": "Factura de servicios",
+    "created_at": "2024-01-01T00:00:00.000Z",
     "client": {
       "id": 1,
       "name": "Juan Pérez",
-      "email": "juanperez@gmail.com",
-      "identification": "12345678",
-      "address": "Carrera 7 #23-45, Bogotá"
+      "email": "juan@example.com",
+      "identification": "123456789",
+      "address": "Calle 123"
     }
   }
 }
 ```
 
-**Respuesta de error (404 Not Found):**
+### Crear Factura
+```
+POST /api/v1/facturas
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "invoice": {
+    "client_id": 1,
+    "issue_date": "2024-01-01",
+    "due_date": "2024-01-31",
+    "subtotal": 100.00,
+    "tax": 19.00,
+    "notes": "Factura de servicios"
+  }
+}
+```
+
+**Campos opcionales:**
+- `invoice_number`: Se genera automáticamente si no se proporciona
+- `status`: Por defecto es `pending`
+- `tax`: Por defecto es 0.00
+
+**Respuesta exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Factura creada exitosamente",
+  "data": {
+    "id": 1,
+    "invoice_number": "INV-20240101-0001",
+    "client_id": 1,
+    "issue_date": "2024-01-01",
+    "due_date": "2024-01-31",
+    "subtotal": "100.00",
+    "tax": "19.00",
+    "total": "119.00",
+    "status": "pending",
+    "notes": "Factura de servicios",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "client": {
+      "id": 1,
+      "name": "Juan Pérez",
+      "email": "juan@example.com"
+    }
+  }
+}
+```
+
+## 📝 Validaciones
+
+### Campo `invoice_number`
+- Único en el sistema
+- Se genera automáticamente con formato: `INV-YYYYMMDD-XXXX`
+
+### Campo `client_id`
+- Obligatorio
+- Debe existir en el servicio de clientes
+
+### Campo `issue_date`
+- Obligatorio
+- No puede ser anterior a la fecha actual
+- Por defecto es la fecha actual
+
+### Campo `due_date`
+- Opcional
+- No puede ser anterior a la fecha actual
+
+### Campo `subtotal`
+- Obligatorio
+- Debe ser >= 0
+
+### Campo `tax`
+- Opcional (por defecto 0.00)
+- Debe ser >= 0
+
+### Campo `total`
+- Se calcula automáticamente: `subtotal + tax`
+
+### Campo `status`
+- Valores permitidos: `pending`, `paid`, `overdue`, `cancelled`
+- Por defecto es `pending`
+- Se actualiza automáticamente a `overdue` si pasa la fecha de vencimiento
+
+## 🧪 Testing
+
+```bash
+# Ejecutar todos los tests
+bundle exec rspec
+
+# Ejecutar tests específicos
+bundle exec rspec spec/models/invoice_spec.rb
+bundle exec rspec spec/controllers/api/v1/invoices_controller_spec.rb
+```
+
+## 🔍 Ejemplos de Uso
+
+### Crear una factura
+```bash
+curl -X POST http://localhost:3001/api/v1/facturas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoice": {
+      "client_id": 1,
+      "issue_date": "2024-01-15",
+      "due_date": "2024-02-15",
+      "subtotal": 500.00,
+      "tax": 95.00,
+      "notes": "Servicios de consultoría"
+    }
+  }'
+```
+
+### Listar facturas de un cliente
+```bash
+curl "http://localhost:3001/api/v1/facturas?client_id=1"
+```
+
+### Filtrar por estado
+```bash
+curl "http://localhost:3001/api/v1/facturas?status=pending"
+```
+
+### Filtrar por rango de fechas
+```bash
+curl "http://localhost:3001/api/v1/facturas?fechaInicio=2024-01-01&fechaFin=2024-01-31"
+```
+
+### Buscar por número de factura
+```bash
+curl "http://localhost:3001/api/v1/facturas?invoice_number=INV-20240101-0001"
+```
+
+### Obtener factura específica
+```bash
+curl http://localhost:3001/api/v1/facturas/1
+```
+
+## 🔗 Integración con Otros Servicios
+
+### Servicio de Clientes
+- Valida que el cliente exista antes de crear una factura
+- Obtiene información del cliente para incluirla en las respuestas
+
+### Servicio de Auditoría
+Registra automáticamente:
+- Creación de facturas
+- Lectura de facturas
+- Errores en operaciones
+
+## ⏰ Tareas Programadas
+
+### Actualización de Facturas Vencidas
+Se ejecuta periódicamente para actualizar el estado de facturas pendientes que han pasado su fecha de vencimiento.
+
+```ruby
+# Ejecutar manualmente
+rails runner "Invoice.pending.each { |invoice| invoice.check_overdue_status }"
+```
+
+## 🐛 Manejo de Errores
+
+### Factura no encontrada (404)
 ```json
 {
   "success": false,
@@ -273,270 +306,95 @@ curl http://127.0.0.1:3001/api/v1/facturas/1
 }
 ```
 
----
-
-### Crear Factura
-
-**POST** `/api/v1/facturas`
-
-Crea una nueva factura para un cliente existente.
-
-**Headers:**
-```
-Content-Type: application/json
-```
-
-**Cuerpo de la solicitud:**
+### Cliente no encontrado (404)
 ```json
 {
-  "invoice": {
-    "client_id": 1,
-    "subtotal": 1000.00,
-    "tax": 190.00,
-    "due_date": "2025-12-31",
-    "status": "pending",
-    "notes": "Servicios profesionales"
-  }
+  "success": false,
+  "message": "Cliente no encontrado"
 }
 ```
 
-**Campos:**
-
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| client_id | Integer | Sí | ID del cliente (debe existir en la tabla clients) |
-| subtotal | Decimal | Sí | Monto antes de impuestos (>= 0) |
-| tax | Decimal | No | Impuestos (>= 0, default: 0.0) |
-| invoice_number | String | No | Se genera automáticamente si no se proporciona |
-| issue_date | Date | No | Default: fecha actual |
-| due_date | Date | No | Fecha de vencimiento |
-| status | String | No | pending, paid, overdue, cancelled (default: pending) |
-| notes | Text | No | Notas adicionales |
-
-**Nota:** El campo `total` se calcula automáticamente como `subtotal + tax`.
-
-**Ejemplo de solicitud:**
-```bash
-curl -X POST http://127.0.0.1:3001/api/v1/facturas \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invoice": {
-      "client_id": 1,
-      "subtotal": 1000.00,
-      "tax": 190.00,
-      "due_date": "2025-12-31",
-      "notes": "Servicios de consultoría"
-    }
-  }'
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Factura creada exitosamente",
-  "data": {
-    "id": 6,
-    "client_id": 1,
-    "invoice_number": "INV-20251112-0006",
-    "issue_date": "2025-11-12",
-    "due_date": "2025-12-31",
-    "subtotal": "1000.0",
-    "tax": "190.0",
-    "total": "1190.0",
-    "status": "pending",
-    "notes": "Servicios de consultoría",
-    "created_at": "2025-11-12T10:00:00.000Z",
-    "client": {
-      "id": 1,
-      "name": "Juan Pérez",
-      "email": "juanperez@gmail.com"
-    }
-  }
-}
-```
-
-**Respuesta de error (422 Unprocessable Entity):**
+### Error de validación (422)
 ```json
 {
   "success": false,
   "message": "No se pudo crear la factura",
   "errors": [
-    "Client no puede estar vacío",
-    "Subtotal debe ser mayor o igual a 0"
+    "Client id el cliente no existe en el servicio de clientes",
+    "Issue date no puede ser anterior a la fecha actual"
   ]
 }
 ```
 
----
-
-## 📊 Modelo de Datos
-
-### Relaciones
-
-- `Invoice` tiene una referencia a `Client` mediante `client_id`
-- **Nota importante**: No existe una Foreign Key a nivel de base de datos hacia la tabla `clients`
-- La validación de existencia del cliente se realiza mediante el servicio `ClientsService` que hace llamadas HTTP al `clients_service`
-- Esto permite mantener la independencia entre los microservicios mientras se comparte la base de datos
-
-### Validaciones del modelo Invoice
-
-- **client_id**: 
-  - Presencia requerida
-  - **Validación personalizada**: Verifica la existencia del cliente mediante llamada HTTP al `clients_service`
-  - Mensaje de error: "el cliente no existe en el servicio de clientes"
-
-- **invoice_number**: 
-  - Presencia requerida
-  - Único en la base de datos
-  - Se genera automáticamente en formato: `INV-YYYYMMDD-XXXX`
-  - Mensaje de error: "no puede estar vacío" / "ya está registrado"
-
-- **issue_date**: 
-  - Presencia requerida
-  - Default: fecha actual (solo en creación)
-  - Mensaje de error: "no puede estar vacío"
-
-- **subtotal**: 
-  - Presencia requerida
-  - Debe ser >= 0
-  - Mensaje de error: "no puede estar vacío" / "debe ser mayor o igual a 0"
-
-- **tax**: 
-  - Opcional (permite nil)
-  - Debe ser >= 0
-  - Default: 0.0
-  - Mensaje de error: "debe ser mayor o igual a 0"
-
-- **total**: 
-  - Presencia requerida
-  - Se calcula automáticamente como `subtotal + tax`
-  - Debe ser >= 0
-  - Mensaje de error: "no puede estar vacío" / "debe ser mayor o igual a 0"
-
-- **status**: 
-  - Debe ser uno de: `pending`, `paid`, `overdue`, `cancelled`
-  - Default: `pending`
-  - Mensaje de error: "debe ser pending, paid, overdue o cancelled"
-
-### Scopes
-
-- `Invoice.pending` - Retorna facturas pendientes
-- `Invoice.paid` - Retorna facturas pagadas
-- `Invoice.overdue` - Retorna facturas vencidas
-- `Invoice.by_client(client_id)` - Filtra por cliente
-
-### Callbacks
-
-- `before_validation :generate_invoice_number` - Genera número de factura automáticamente (solo en creación)
-- `before_validation :calculate_total` - Calcula el total automáticamente
-- `before_validation :set_default_issue_date` - Establece fecha de emisión por defecto (solo en creación)
-- `before_validation :check_overdue_status` - Actualiza automáticamente facturas pendientes vencidas a estado 'overdue'
-
-## 🔧 Comandos Útiles
-
-```bash
-# Ver rutas disponibles
-rails routes
-
-# Consola interactiva
-rails console
-
-# Verificar sintaxis (Rubocop)
-rubocop
-
-# Ver facturas en consola
-rails console
-> Invoice.includes(:client).all
+### Formato de fecha inválido (400)
+```json
+{
+  "success": false,
+  "message": "Formato de fecha inválido. Use formato YYYY-MM-DD"
+}
 ```
 
-## 🔗 Integraciones
-
-### Clients Service
-
-El servicio se comunica con `clients_service` para:
-- Validar existencia de clientes antes de crear facturas
-- Obtener información del cliente en las respuestas JSON
-
-**Configuración:** `CLIENTS_SERVICE_URL=http://127.0.0.1:3000`
-
-### Audit Service
-
-Registra automáticamente eventos de auditoría:
-- ✅ Creación de facturas
-- ✅ Consulta de facturas
-- ✅ Errores de validación
-- ✅ Recursos no encontrados
-
-**Configuración:** `AUDIT_SERVICE_URL=http://localhost:3002`
-
-### Integración Tributaria (Factory Method)
-
-Arquitectura preparada para integración futura con entidades tributarias (DIAN, SAT, SUNAT, etc.).
-
-**Archivos:**
-- `app/services/tributary_authorities/` - Adaptadores y Factory
-- Ver [DIAN_FUTURE_IMPLEMENTATION.md](./DIAN_FUTURE_IMPLEMENTATION.md) para más detalles
-
-**Configuración:** `TRIBUTARY_AUTHORITY_COUNTRY=colombia|other`
-
-## 📝 Notas Adicionales
-
-- **Base de datos compartida**: Comparte PostgreSQL con `clients_service`
-- **Número de factura**: Auto-generado en formato `INV-YYYYMMDD-XXXX`
-- **Cálculo automático**: `total = subtotal + tax`
-- **Detección de vencidas**: Facturas `pending` con `due_date` pasada se marcan como `overdue`
-- **Puerto recomendado**: 3001
-
-## 🐛 Solución de Problemas
-
-### Error: Cliente no encontrado al crear factura
-
-Este error ocurre cuando el `client_id` proporcionado no existe en el servicio de clientes. Verifica:
-
-1. **Que el servicio de clientes esté corriendo:**
-   ```bash
-   curl http://127.0.0.1:3000/api/v1/health_check
-   ```
-
-2. **Que el cliente exista:**
-   ```bash
-   curl http://127.0.0.1:3000/api/v1/clientes/{client_id}
-   ```
-
-3. **Que la variable `CLIENTS_SERVICE_URL` esté configurada correctamente** en el archivo `.env`
-
-### Error de conexión a PostgreSQL
-
-Asegúrate de que:
-- El servicio de clientes ya tiene configurada la base de datos y las migraciones ejecutadas
-- Las variables de entorno de PostgreSQL estén correctamente configuradas en el archivo `.env`
-- PostgreSQL esté corriendo en tu sistema
-
-### Las facturas no incluyen información del cliente
-
-Verifica que:
-- El servicio de clientes esté corriendo y accesible
-- La URL configurada en `CLIENTS_SERVICE_URL` sea correcta
-- Revisa los logs del servicio para ver si hay errores de conexión
-
-### Estructura del Proyecto
+## 📊 Estructura del Proyecto
 
 ```
 billing_service/
 ├── app/
-│   ├── controllers/api/v1/
-│   │   └── invoices_controller.rb
+│   ├── controllers/
+│   │   └── api/v1/
+│   │       └── invoices_controller.rb
 │   ├── models/
 │   │   └── invoice.rb
 │   └── services/
-│       ├── clients_service.rb
 │       ├── audit_service.rb
+│       ├── clients_service.rb
 │       └── tributary_authorities/
-│           ├── base_adapter.rb
-│           ├── dian_adapter.rb
-│           ├── other_adapter.rb
-│           └── factory.rb
-└── db/migrate/
-    └── 20251112092641_create_invoices.rb
+│           ├── dian_service.rb
+│           └── ...
+├── config/
+│   ├── database.yml
+│   └── routes.rb
+├── db/
+│   └── migrate/
+├── spec/
+└── Dockerfile
 ```
+
+## 🔄 Scopes Disponibles
+
+```ruby
+# Facturas pendientes
+Invoice.pending
+
+# Facturas pagadas
+Invoice.paid
+
+# Facturas vencidas
+Invoice.overdue
+
+# Facturas de un cliente
+Invoice.by_client(client_id)
+```
+
+## 💡 Características Adicionales
+
+### Generación Automática de Número de Factura
+El número se genera con el formato: `INV-YYYYMMDD-XXXX`
+- `YYYYMMDD`: Fecha actual
+- `XXXX`: Número secuencial del día (0001, 0002, etc.)
+
+### Cálculo Automático de Total
+El sistema calcula automáticamente: `total = subtotal + tax`
+
+### Detección Automática de Facturas Vencidas
+Las facturas pendientes se marcan como `overdue` automáticamente al consultarlas si han pasado su fecha de vencimiento.
+
+## 🏷️ Versionado
+
+**Versión actual:** v1
+**Puerto por defecto:** 3001
+
+## 📚 Documentación Adicional
+
+Para información sobre integración con la DIAN (futura implementación), consulta el archivo `DIAN_FUTURE_IMPLEMENTATION.md`.
+
+Para más información sobre la arquitectura completa del sistema, consulta el README principal del proyecto.

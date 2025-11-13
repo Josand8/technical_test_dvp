@@ -1,153 +1,74 @@
-# Servicio de Clientes - API REST
+# 🧑‍💼 Servicio de Clientes
 
-Microservicio para la gestión de clientes desarrollado con Ruby on Rails 8.1 y PostgreSQL.
+Microservicio para gestionar clientes del sistema de facturación. Proporciona operaciones CRUD para clientes y se integra con el servicio de auditoría.
 
-## 📋 Tabla de Contenidos
+## 🛠️ Tecnologías
 
-- [🛠 Requisitos](#-requisitos)
-- [⚙️ Configuración](#️-configuración)
-- [🗄️ Base de Datos](#️-base-de-datos)
-- [🚀 Ejecución](#-ejecución)
-- [📡 API Endpoints](#-api-endpoints)
-- [🔗 Integraciones](#-integraciones)
-- [🧪 Testing](#-testing)
-- [📊 Modelo de Datos](#-modelo-de-datos)
-- [🔧 Comandos Útiles](#-comandos-útiles)
-- [🐛 Solución de Problemas](#-solución-de-problemas)
+- **Ruby**: 3.4.3
+- **Rails**: 8.0.4
+- **Base de datos**: Oracle Enhanced Adapter (~> 8.0.0)
+- **Testing**: RSpec
+- **Docker**: Compatible
 
-## 🛠 Requisitos
+## 📋 Requisitos Previos
 
-- Ruby 3.3.6 o superior
-- Rails 8.1.1
-- PostgreSQL 14 o superior
+- Ruby 3.4.3
+- Bundler 2.4.19
+- Oracle Database XE (contenedor Docker)
+- Docker y Docker Compose (para entorno completo)
 
-## ⚙️ Configuración
+## 🔧 Variables de Entorno
 
-### 1. Instalar dependencias
-
-```bash
-bundle install
-```
-
-### 2. Configurar variables de entorno
-
-Crear un archivo `.env` en la raíz del proyecto:
+Crea un archivo `.env` en la raíz del servicio con las siguientes variables:
 
 ```env
-# PostgreSQL Database Configuration
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USERNAME=postgres
-POSTGRES_PASSWORD=postgres
+# Base de datos Oracle
+ORACLE_PASSWORD=developmentpass
+RAILS_ENV=development
 
-# Services Configuration
-AUDIT_SERVICE_URL=http://localhost:3002
+# Servicios externos
+AUDIT_SERVICE_URL=http://audit_service:3002
 ```
 
-## 🗄️ Base de Datos
+## 🚀 Instalación
 
-### Crear la base de datos y ejecutar migraciones
+### Opción 1: Con Docker (Recomendado)
 
 ```bash
-# Crear la base de datos
-rails db:create
+# Desde la raíz del proyecto principal
+docker-compose up clients_service
+```
 
-# Ejecutar migraciones
+### Opción 2: Local
+
+```bash
+# Instalar dependencias
+bundle install
+
+# Configurar base de datos
+rails db:create
 rails db:migrate
 
-# Cargar datos de ejemplo (opcional)
-rails db:seed
-```
-
-### Estructura de la tabla `clients`
-
-| Campo | Tipo | Descripción | Restricciones |
-|-------|------|-------------|---------------|
-| id | SERIAL | Identificador único | Primary Key |
-| name | VARCHAR | Nombre del cliente | NOT NULL, 2-100 caracteres |
-| identification | VARCHAR | Identificación del cliente | Único, máximo 20 caracteres |
-| email | VARCHAR | Email del cliente | NOT NULL, único, formato válido |
-| address | TEXT | Dirección | Máximo 500 caracteres |
-| created_at | TIMESTAMP | Fecha de creación | |
-| updated_at | TIMESTAMP | Fecha de actualización | |
-
-### Índices
-
-- `index_clients_on_email` (UNIQUE)
-- `index_clients_on_identification` (UNIQUE)
-
-## 🚀 Ejecución
-
-### Modo desarrollo
-
-```bash
-rails server
-# o
-bin/rails server -p 3000
-```
-
-El servicio estará disponible en: `http://localhost:3000`
-
-
-### Verificar el servicio
-
-```bash
-curl http://localhost:3000/api/v1/health_check
-```
-
-Respuesta esperada:
-```json
-{
-  "status": "Clients Service is running"
-}
+# Iniciar servidor
+rails server -p 3000
 ```
 
 ## 📡 API Endpoints
 
-### Base URL
-```
-http://localhost:3000/api/v1
-```
-
-**Nota:** El recurso de clientes está disponible en la ruta `/clientes` (en español).
-
 ### Health Check
-
-**GET** `/api/v1/health_check`
-
-Verifica el estado del servicio.
-
-**Respuesta:**
-```json
-{
-  "status": "Clients Service is running"
-}
 ```
-
----
+GET /api/v1/health_check
+```
 
 ### Listar Clientes
-
-**GET** `/api/v1/clientes`
-
-Obtiene la lista de todos los clientes.
-
-**Parámetros de consulta (opcionales):**
-
-| Parámetro | Tipo | Descripción |
-|-----------|------|-------------|
-| search | String | Búsqueda por nombre o email (case insensitive) |
-
-**Ejemplo de solicitud:**
-```bash
-# Listar todos los clientes
-curl "http://localhost:3000/api/v1/clientes"
-
-# Buscar clientes por nombre o email
-curl "http://localhost:3000/api/v1/clientes?search=juan"
+```
+GET /api/v1/clientes
 ```
 
-**Respuesta exitosa (200 OK):**
+**Parámetros opcionales:**
+- `search`: Busca por nombre o email
+
+**Respuesta exitosa:**
 ```json
 {
   "success": true,
@@ -155,48 +76,139 @@ curl "http://localhost:3000/api/v1/clientes?search=juan"
     {
       "id": 1,
       "name": "Juan Pérez",
-      "identification": "12345678",
-      "email": "juanperez@gmail.com",
-      "address": "Carrera 7 #23-45, Bogotá",
-      "created_at": "2024-11-11T23:46:38.000Z"
+      "email": "juan@example.com",
+      "identification": "123456789",
+      "address": "Calle 123",
+      "created_at": "2024-01-01T00:00:00.000Z"
     }
   ],
   "total_clients": 1
 }
 ```
 
----
-
 ### Obtener Cliente
-
-**GET** `/api/v1/clientes/:id`
-
-Obtiene los detalles de un cliente específico.
-
-**Parámetros de ruta:**
-- `id` (requerido): ID del cliente
-
-**Ejemplo de solicitud:**
-```bash
-curl http://localhost:3000/api/v1/clientes/1
+```
+GET /api/v1/clientes/:id
 ```
 
-**Respuesta exitosa (200 OK):**
+**Respuesta exitosa:**
 ```json
 {
   "success": true,
   "data": {
     "id": 1,
     "name": "Juan Pérez",
-    "identification": "12345678",
-    "email": "juanperez@gmail.com",
-    "address": "Carrera 7 #23-45, Bogotá",
-    "created_at": "2024-11-11T23:46:38.000Z"
+    "email": "juan@example.com",
+    "identification": "123456789",
+    "address": "Calle 123",
+    "created_at": "2024-01-01T00:00:00.000Z"
   }
 }
 ```
 
-**Respuesta de error (404 Not Found):**
+### Crear Cliente
+```
+POST /api/v1/clientes
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "client": {
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "identification": "123456789",
+    "address": "Calle 123"
+  }
+}
+```
+
+**Respuesta exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Cliente creado exitosamente",
+  "data": {
+    "id": 1,
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "identification": "123456789",
+    "address": "Calle 123",
+    "created_at": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+## 📝 Validaciones
+
+### Campo `name`
+- Obligatorio
+- Longitud: 2-100 caracteres
+
+### Campo `email`
+- Obligatorio
+- Formato válido de email
+- Único en el sistema
+
+### Campo `identification`
+- Opcional
+- Único si se proporciona
+- Máximo 20 caracteres
+
+### Campo `address`
+- Opcional
+- Máximo 500 caracteres
+
+## 🧪 Testing
+
+```bash
+# Ejecutar todos los tests
+bundle exec rspec
+
+# Ejecutar tests específicos
+bundle exec rspec spec/models/client_spec.rb
+bundle exec rspec spec/controllers/api/v1/clients_controller_spec.rb
+```
+
+## 🔍 Ejemplos de Uso
+
+### Crear un cliente
+```bash
+curl -X POST http://localhost:3000/api/v1/clientes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client": {
+      "name": "María García",
+      "email": "maria@example.com",
+      "identification": "987654321",
+      "address": "Avenida Principal 456"
+    }
+  }'
+```
+
+### Buscar clientes
+```bash
+# Buscar por nombre o email
+curl "http://localhost:3000/api/v1/clientes?search=maria"
+```
+
+### Obtener un cliente específico
+```bash
+curl http://localhost:3000/api/v1/clientes/1
+```
+
+## 🔗 Integración con Otros Servicios
+
+### Servicio de Auditoría
+Este servicio registra automáticamente en el servicio de auditoría:
+- Creación de clientes
+- Lectura de clientes
+- Errores en operaciones
+
+## 🐛 Manejo de Errores
+
+### Cliente no encontrado (404)
 ```json
 {
   "success": false,
@@ -204,203 +216,57 @@ curl http://localhost:3000/api/v1/clientes/1
 }
 ```
 
----
-
-### Crear Cliente
-
-**POST** `/api/v1/clientes`
-
-Crea un nuevo cliente.
-
-**Headers:**
-```
-Content-Type: application/json
-```
-
-**Cuerpo de la solicitud:**
-```json
-{
-  "client": {
-    "name": "Nuevo Cliente",
-    "identification": "87654321",
-    "email": "nuevo@example.com",
-    "address": "Calle Nueva 456"
-  }
-}
-```
-
-**Campos:**
-
-| Campo | Tipo | Requerido | Descripción |
-|-------|------|-----------|-------------|
-| name | String | Sí | Nombre del cliente (2-100 caracteres) |
-| identification | String | No | Identificación del cliente (único, máximo 20 caracteres) |
-| email | String | Sí | Email válido y único |
-| address | String | No | Dirección (máximo 500 caracteres) |
-
-**Ejemplo de solicitud:**
-```bash
-curl -X POST http://localhost:3000/api/v1/clientes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "client": {
-      "name": "Nuevo Cliente",
-      "identification": "87654321",
-      "email": "nuevo@example.com",
-      "address": "Calle Nueva 456"
-    }
-  }'
-```
-
-**Respuesta exitosa (201 Created):**
-```json
-{
-  "success": true,
-  "message": "Cliente creado exitosamente",
-  "data": {
-    "id": 7,
-    "name": "Nuevo Cliente",
-    "identification": "87654321",
-    "email": "nuevo@example.com",
-    "address": "Calle Nueva 456",
-    "created_at": "2024-11-11T23:46:38.000Z"
-  }
-}
-```
-
-**Respuesta de error (422 Unprocessable Entity):**
+### Error de validación (422)
 ```json
 {
   "success": false,
   "message": "No se pudo crear el cliente",
   "errors": [
-    "Email no tiene un formato válido",
+    "Email ya está registrado",
     "Name no puede estar vacío"
   ]
 }
 ```
 
----
+## 📊 Estructura del Proyecto
 
-## 🔗 Integraciones
-
-### Audit Service
-
-Registra automáticamente eventos de auditoría:
-- ✅ Creación de clientes
-- ✅ Consulta de clientes
-- ✅ Errores de validación
-- ✅ Recursos no encontrados
-
-**Configuración:** `AUDIT_SERVICE_URL=http://localhost:3002`
-
-## 🧪 Testing
-
-### Ejecutar todos los tests
-
-```bash
-bundle exec rspec
+```
+clients_service/
+├── app/
+│   ├── controllers/
+│   │   └── api/v1/
+│   │       └── clients_controller.rb
+│   ├── models/
+│   │   └── client.rb
+│   └── services/
+│       └── audit_service.rb
+├── config/
+│   ├── database.yml
+│   └── routes.rb
+├── db/
+│   └── migrate/
+├── spec/
+│   ├── controllers/
+│   ├── factories/
+│   └── models/
+└── Dockerfile
 ```
 
-### Ejecutar tests específicos
+## 🔄 Scopes Disponibles
 
-```bash
-# Tests del modelo
-bundle exec rspec spec/models/
+```ruby
+# Buscar por nombre (case insensitive)
+Client.by_name("juan")
 
-# Tests del controlador
-bundle exec rspec spec/controllers/
+# Buscar por email (case insensitive)
+Client.by_email("juan@example.com")
 ```
 
-### Cobertura de Tests
+## 🏷️ Versionado
 
-El proyecto incluye tests para:
-- ✅ Validaciones del modelo (name, email, identification, address)
-- ✅ Callbacks y normalizaciones (email lowercase, identificación sin espacios)
-- ✅ Scopes y consultas (búsqueda por nombre y email)
-- ✅ Endpoints de la API (index, show, create)
-- ✅ Respuestas de error (404, 422)
+**Versión actual:** v1
+**Puerto por defecto:** 3000
 
-## 📊 Modelo de Datos
+## 📚 Documentación Adicional
 
-### Validaciones
-
-El modelo `Client` incluye las siguientes validaciones:
-
-- **name**: 
-  - Presencia requerida
-  - Longitud entre 2 y 100 caracteres
-
-- **identification**: 
-  - Máximo 20 caracteres
-  - Único
-  - Normalizado (sin espacios) antes de guardar
-  - Opcional
-
-- **email**: 
-  - Presencia requerida
-  - Formato válido (RFC 2822)
-  - Único (case insensitive)
-  - Normalizado a minúsculas antes de guardar
-
-- **address**: 
-  - Máximo 500 caracteres
-  - Opcional
-
-### Scopes
-
-- `Client.by_name(name)` - Busca por nombre (case insensitive)
-- `Client.by_email(email)` - Busca por email (case insensitive)
-
-## 🔧 Comandos Útiles
-
-```bash
-# Reiniciar la base de datos
-rails db:reset
-
-# Ver rutas disponibles
-rails routes
-
-# Consola interactiva
-rails console
-
-# Verificar sintaxis (Rubocop)
-rubocop
-
-# Análisis de seguridad
-brakeman
-```
-
-## 📝 Notas Adicionales
-
-- **Base de datos compartida**: PostgreSQL compartida con `billing_service`
-- **Normalización automática**: Emails a minúsculas, identificación sin espacios
-- **Búsquedas**: No distinguen entre mayúsculas y minúsculas
-- **Respuestas JSON**: Campo `updated_at` no incluido
-- **Puerto recomendado**: 3000
-
-## 🐛 Solución de Problemas
-
-### Error de conexión a PostgreSQL
-
-Si tienes problemas de conexión a PostgreSQL, verifica:
-
-1. Que PostgreSQL esté corriendo (`brew services start postgresql` en macOS)
-2. Las credenciales en `.env` sean correctas
-3. El usuario de PostgreSQL tenga permisos para crear bases de datos
-4. El puerto 5432 esté disponible
-
-### Error en las migraciones
-
-Si las migraciones fallan:
-
-```bash
-# Verificar el estado de las migraciones
-rails db:migrate:status
-
-# Rollback de la última migración
-rails db:rollback
-
-# Ejecutar migración específica
-rails db:migrate:up VERSION=20251111234638
-```
+Para más información sobre la arquitectura completa del sistema, consulta el README principal del proyecto.
